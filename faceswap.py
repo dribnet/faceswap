@@ -49,7 +49,8 @@ import numpy
 
 import sys
 
-PREDICTOR_PATH = "/home/matt/dlib-18.16/shape_predictor_68_face_landmarks.dat"
+# PREDICTOR_PATH = "/home/matt/dlib-18.16/shape_predictor_68_face_landmarks.dat"
+PREDICTOR_PATH = "/Users/tom/code/nets/faceswap/shape_predictor_68_face_landmarks.dat"
 SCALE_FACTOR = 1 
 FEATHER_AMOUNT = 11
 
@@ -199,21 +200,22 @@ def correct_colours(im1, im2, landmarks1):
     return (im2.astype(numpy.float64) * im1_blur.astype(numpy.float64) /
                                                 im2_blur.astype(numpy.float64))
 
-im1, landmarks1 = read_im_and_landmarks(sys.argv[1])
-im2, landmarks2 = read_im_and_landmarks(sys.argv[2])
+if __name__ == "__main__":
+    im1, landmarks1 = read_im_and_landmarks(sys.argv[1])
+    im2, landmarks2 = read_im_and_landmarks(sys.argv[2])
 
-M = transformation_from_points(landmarks1[ALIGN_POINTS],
-                               landmarks2[ALIGN_POINTS])
+    M = transformation_from_points(landmarks1[ALIGN_POINTS],
+                                   landmarks2[ALIGN_POINTS])
 
-mask = get_face_mask(im2, landmarks2)
-warped_mask = warp_im(mask, M, im1.shape)
-combined_mask = numpy.max([get_face_mask(im1, landmarks1), warped_mask],
-                          axis=0)
+    mask = get_face_mask(im2, landmarks2)
+    warped_mask = warp_im(mask, M, im1.shape)
+    combined_mask = numpy.max([get_face_mask(im1, landmarks1), warped_mask],
+                              axis=0)
 
-warped_im2 = warp_im(im2, M, im1.shape)
-warped_corrected_im2 = correct_colours(im1, warped_im2, landmarks1)
+    warped_im2 = warp_im(im2, M, im1.shape)
+    warped_corrected_im2 = correct_colours(im1, warped_im2, landmarks1)
 
-output_im = im1 * (1.0 - combined_mask) + warped_corrected_im2 * combined_mask
+    output_im = im1 * (1.0 - combined_mask) + warped_corrected_im2 * combined_mask
 
-cv2.imwrite('output.jpg', output_im)
+    cv2.imwrite('output.jpg', output_im)
 
