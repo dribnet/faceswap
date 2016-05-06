@@ -54,6 +54,8 @@ import sys
 def read_im_and_landmarks(fname):
     blur_amount = 31
     im = cv2.imread(fname, cv2.IMREAD_COLOR)
+    if (im is None):
+        raise faceswap.NoFaces
     im_core = cv2.resize(im, (im.shape[1] * faceswap.SCALE_FACTOR,
                               im.shape[0] * faceswap.SCALE_FACTOR))
 
@@ -85,7 +87,7 @@ if __name__ == "__main__":
     coerced_landmarks = 0 * landmarks + avg_landmarks
 
     source_dir = "/Volumes/expand1/develop/data/CelebA/original/img_celeba"
-    dest_dir = "/Volumes/expand1/develop/data/CelebA/original/dlib_aligned2"
+    dest_dir = "/Volumes/expand1/develop/data/CelebA/original/dlib_aligned_128"
 
     num_images = 202599
     # num_images = 10
@@ -98,7 +100,7 @@ if __name__ == "__main__":
             M = faceswap.transformation_from_points(coerced_landmarks[faceswap.ALIGN_POINTS],
                                            landmarks[faceswap.ALIGN_POINTS])
             warped_im2 = faceswap.warp_im(im, M, (256,256,3))
-            resize64 = imresize(warped_im2, (64,64), interp="bicubic", mode="RGB")
+            resize64 = imresize(warped_im2, (128,128), interp="bicubic", mode="RGB")
             cv2.imwrite("{}/{}.png".format(dest_dir, filebase), resize64)
             # cv2.imwrite("{}/{}.png".format(dest_dir, filebase), im)
         except faceswap.NoFaces:
