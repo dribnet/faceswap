@@ -74,7 +74,7 @@ if __name__ == "__main__":
             M = faceswap.transformation_from_points(coerced_landmarks[faceswap.ALIGN_POINTS],
                                            landmarks[faceswap.ALIGN_POINTS])
             warped_im2 = faceswap.warp_im(im, M, (256,256,3))
-            resize64 = imresize(warped_im2, (64,64), interp="bicubic", mode="RGB")
+            resize64 = imresize(warped_im2, (128,128), interp="bicubic", mode="RGB")
             cv2.imwrite(outfile, resize64)
         except faceswap.NoFaces:
             pass
