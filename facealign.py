@@ -84,14 +84,15 @@ def read_im_and_landmarks(fname):
 if __name__ == "__main__":
     avg_landmarks = np.load("mean_landmark_x4.npy")
     im, landmarks = faceswap.read_im_and_landmarks("celeba/000001.jpg")
-    coerced_landmarks = 0 * landmarks + avg_landmarks
+    coerced_landmarks = 0 * landmarks + 4 * avg_landmarks
 
     source_dir = "/Volumes/expand1/develop/data/CelebA/original/img_celeba"
-    dest_dir = "/Volumes/expand1/develop/data/CelebA/original/dlib_aligned_128"
+    dest_dir = "/Volumes/expand1/develop/data/CelebA/original/dlib_aligned_256"
 
     num_images = 202599
     # num_images = 10
     for i in range(num_images):
+    # for i in range(14156,50000):
         try:
             filebase = "{:06d}".format(i+1)
             if i % 10000 == 0:
@@ -99,8 +100,8 @@ if __name__ == "__main__":
             im, landmarks = read_im_and_landmarks("{}/{}.jpg".format(source_dir, filebase))
             M = faceswap.transformation_from_points(coerced_landmarks[faceswap.ALIGN_POINTS],
                                            landmarks[faceswap.ALIGN_POINTS])
-            warped_im2 = faceswap.warp_im(im, M, (256,256,3))
-            resize64 = imresize(warped_im2, (128,128), interp="bicubic", mode="RGB")
+            warped_im2 = faceswap.warp_im(im, M, (1024,1024,3))
+            resize64 = imresize(warped_im2, (256,256), interp="bicubic", mode="RGB")
             cv2.imwrite("{}/{}.png".format(dest_dir, filebase), resize64)
             # cv2.imwrite("{}/{}.png".format(dest_dir, filebase), im)
         except faceswap.NoFaces:
