@@ -53,11 +53,18 @@ import os
 import sys
 import faceswap
 import facealign
+import argparse
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Plot model samples")
+    parser.add_argument("--image-size", dest='image_size', type=int, default=64,
+                        help="size of output images")
+    args = parser.parse_args()
+
     avg_landmarks = np.load("mean_landmark_x4.npy")
     im, landmarks = facealign.read_im_and_landmarks("celeba/000001.jpg")
-    coerced_landmarks = 0 * landmarks + avg_landmarks
+    im, landmarks = faceswap.read_im_and_landmarks("celeba/000001.jpg")
+    coerced_landmarks = 0 * landmarks + 4 * avg_landmarks
 
     source_dir = "inputs"
     dest_dir = "outputs"
@@ -73,8 +80,8 @@ if __name__ == "__main__":
             outfile = "{}.png".format(os.path.splitext(outfile)[0])
             M = faceswap.transformation_from_points(coerced_landmarks[faceswap.ALIGN_POINTS],
                                            landmarks[faceswap.ALIGN_POINTS])
-            warped_im2 = faceswap.warp_im(im, M, (256,256,3))
-            resize64 = imresize(warped_im2, (128,128), interp="bicubic", mode="RGB")
+            warped_im2 = faceswap.warp_im(im, M, (1024,1024,3))
+            resize64 = imresize(warped_im2, (args.image_size, args.image_size), interp="bicubic", mode="RGB")
             cv2.imwrite(outfile, resize64)
         except faceswap.NoFaces:
             pass
