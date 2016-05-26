@@ -48,10 +48,12 @@ import dlib
 import numpy
 
 import sys
+import os
 
 # PREDICTOR_PATH = "/home/matt/dlib-18.16/shape_predictor_68_face_landmarks.dat"
 # PREDICTOR_PATH = "/Users/tom/code/nets/faceswap/shape_predictor_68_face_landmarks.dat"
-PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
+script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+PREDICTOR_PATH = os.path.join(script_dir, "shape_predictor_68_face_landmarks.dat")
 SCALE_FACTOR = 1 
 FEATHER_AMOUNT = 11
 

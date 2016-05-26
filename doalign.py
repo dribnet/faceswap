@@ -1,46 +1,10 @@
 #!/usr/bin/python
 
-# Copyright (c) 2015 Matthew Earl
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-# 
-#     The above copyright notice and this permission notice shall be included
-#     in all copies or substantial portions of the Software.
-# 
-#     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-#     OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-#     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-#     NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-#     DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-#     OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-#     USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
-This is the code behind the Switching Eds blog post:
+Use dlib to align a face to standard landmarks.
 
-    http://matthewearl.github.io/2015/07/28/switching-eds-with-python/
-
-See the above for an explanation of the code below.
-
-To run the script you'll need to install dlib (http://dlib.net) including its
-Python bindings, and OpenCV. You'll also need to obtain the trained model from
-sourceforge:
-
-    http://sourceforge.net/projects/dclib/files/dlib/v18.10/shape_predictor_68_face_landmarks.dat.bz2
-
-Unzip with `bunzip2` and change `PREDICTOR_PATH` to refer to this file. The
-script is run like so:
-
-    ./faceswap.py <head image> <face image>
-
-If successful, a file `output.jpg` will be produced with the facial features
-from `<head image>` replaced with the facial features from `<face image>`.
-
+Can run on all files in a directory or a single file.
 """
 
 import cv2
@@ -55,37 +19,72 @@ import faceswap
 import facealign
 import argparse
 
+# get a matrix which represents the standard face location (1024x1024 I believe)
+def get_standard_landmarks():
+    # historical note: this is how we made this file
+    # avg_landmarks = np.load("mean_landmark_x4.npy")
+    # im, landmarks = facealign.read_im_and_landmarks("celeba/000001.jpg")
+    # im, landmarks = faceswap.read_im_and_landmarks("celeba/000001.jpg")
+    # standard_landmarks = 0 * landmarks + 4 * avg_landmarks
+    # np.save("standard_landmarks", standard_landmarks)
+
+    script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+    rel_path = "standard_landmarks.npy"
+    abs_file_path = os.path.join(script_dir, rel_path)
+    return np.matrix(np.load(abs_file_path))
+
+# alignment from infile saved to outfile. returns true if all is ok.
+def align_face(infile, outfile, image_size, standard_landmarks=None, exception_print=True):
+    if standard_landmarks is None:
+        standard_landmarks = get_standard_landmarks()
+    try:
+        im, landmarks = facealign.read_im_and_landmarks(infile)
+        M = faceswap.transformation_from_points(standard_landmarks[faceswap.ALIGN_POINTS],
+                                       landmarks[faceswap.ALIGN_POINTS])
+        warped_im2 = faceswap.warp_im(im, M, (1024,1024,3))
+        resize64 = imresize(warped_im2, (image_size, image_size), interp="bicubic", mode="RGB")
+        cv2.imwrite(outfile, resize64)
+        return True
+    except faceswap.NoFaces:
+        if exception_print:
+            print("no faces in {}".format(infile))
+        return False
+    except faceswap.TooManyFaces:
+        if exception_print:
+            print("too many faces in {}".format(infile))
+        return False
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plot model samples")
     parser.add_argument("--image-size", dest='image_size', type=int, default=64,
                         help="size of output images")
+    parser.add_argument("--input-directory", dest='input_directory', default="inputs",
+                        help="directory for input files")
+    parser.add_argument("--output-directory", dest='output_directory', default="outputs",
+                        help="directory for output files")
+    parser.add_argument("--input-file", dest='input_file', default=None,
+                        help="single file input (overrides input-directory)")
+    parser.add_argument("--output-file", dest='output_file', default="output.png",
+                        help="single file output")
     args = parser.parse_args()
 
-    avg_landmarks = np.load("mean_landmark_x4.npy")
-    im, landmarks = facealign.read_im_and_landmarks("celeba/000001.jpg")
-    im, landmarks = faceswap.read_im_and_landmarks("celeba/000001.jpg")
-    coerced_landmarks = 0 * landmarks + 4 * avg_landmarks
+    landmarks = get_standard_landmarks()
 
-    source_dir = "inputs"
-    dest_dir = "outputs"
+    if args.input_file is not None:
+        if align_face(args.input_file, args.output_file, args.image_size, landmarks):
+            sys.exit(0)
+        else:
+            sys.exit(1)
 
-    files = glob.glob("{}/*.*".format(source_dir))
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir)
+    # read input files
+    files = glob.glob("{}/*.*".format(args.input_directory))
+    if not os.path.exists(args.output_directory):
+        os.makedirs(args.output_directory)
 
-    for filename in files:
-        try:
-            im, landmarks = facealign.read_im_and_landmarks(filename)
-            outfile = "{}/{}".format(dest_dir, os.path.basename(filename))
-            outfile = "{}.png".format(os.path.splitext(outfile)[0])
-            M = faceswap.transformation_from_points(coerced_landmarks[faceswap.ALIGN_POINTS],
-                                           landmarks[faceswap.ALIGN_POINTS])
-            warped_im2 = faceswap.warp_im(im, M, (1024,1024,3))
-            resize64 = imresize(warped_im2, (args.image_size, args.image_size), interp="bicubic", mode="RGB")
-            cv2.imwrite(outfile, resize64)
-        except faceswap.NoFaces:
-            pass
-        except faceswap.TooManyFaces:
-            print("too many faces in {}".format(filename))
+    for infile in files:
+        outfile = os.path.join(args.output_directory, os.path.basename(infile))
+        # always save as png
+        outfile = "{}.png".format(os.path.splitext(outfile)[0])
+        align_face(infile, outfile, args.image_size, landmarks)
         # except:
         #     print "Unexpected error:", sys.exc_info()[0]
