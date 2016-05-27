@@ -203,9 +203,9 @@ def correct_colours(im1, im2, landmarks1):
     return (im2.astype(numpy.float64) * im1_blur.astype(numpy.float64) /
                                                 im2_blur.astype(numpy.float64))
 
-if __name__ == "__main__":
-    im1, landmarks1 = read_im_and_landmarks(sys.argv[1])
-    im2, landmarks2 = read_im_and_landmarks(sys.argv[2])
+def do_faceswap(body_image, face_image, output_image):
+    im1, landmarks1 = read_im_and_landmarks(body_image)
+    im2, landmarks2 = read_im_and_landmarks(face_image)
 
     M = transformation_from_points(landmarks1[ALIGN_POINTS],
                                    landmarks2[ALIGN_POINTS])
@@ -220,5 +220,7 @@ if __name__ == "__main__":
 
     output_im = im1 * (1.0 - combined_mask) + warped_corrected_im2 * combined_mask
 
-    cv2.imwrite('output.jpg', output_im)
+    cv2.imwrite(output_image, output_im)
 
+if __name__ == "__main__":
+    do_faceswap(sys.argv[1], sys.argv[2], 'output.jpg')
