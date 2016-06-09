@@ -203,24 +203,28 @@ def correct_colours(im1, im2, landmarks1):
     return (im2.astype(numpy.float64) * im1_blur.astype(numpy.float64) /
                                                 im2_blur.astype(numpy.float64))
 
-def do_faceswap(body_image, face_image, output_image):
-    im1, landmarks1 = read_im_and_landmarks(body_image)
-    im2, landmarks2 = read_im_and_landmarks(face_image)
+def do_faceswap_from_face(body_image, face_im, face_landmarks, output_image):
+    body_im, body_landmarks = read_im_and_landmarks(body_image)
 
-    M = transformation_from_points(landmarks1[ALIGN_POINTS],
-                                   landmarks2[ALIGN_POINTS])
+    M = transformation_from_points(body_landmarks[ALIGN_POINTS],
+                                   face_landmarks[ALIGN_POINTS])
 
-    mask = get_face_mask(im2, landmarks2)
-    warped_mask = warp_im(mask, M, im1.shape)
-    combined_mask = numpy.max([get_face_mask(im1, landmarks1), warped_mask],
+    mask = get_face_mask(face_im, face_landmarks)
+    warped_mask = warp_im(mask, M, body_im.shape)
+    combined_mask = numpy.max([get_face_mask(body_im, body_landmarks), warped_mask],
                               axis=0)
 
-    warped_im2 = warp_im(im2, M, im1.shape)
-    warped_corrected_im2 = correct_colours(im1, warped_im2, landmarks1)
+    warped_im2 = warp_im(face_im, M, body_im.shape)
+    warped_corrected_im2 = correct_colours(body_im, warped_im2, body_landmarks)
 
-    output_im = im1 * (1.0 - combined_mask) + warped_corrected_im2 * combined_mask
+    output_im = body_im * (1.0 - combined_mask) + warped_corrected_im2 * combined_mask
 
     cv2.imwrite(output_image, output_im)
 
+
+def do_faceswap(body_image, face_image, output_image):
+    face_im, face_landmarks = read_im_and_landmarks(face_image)
+    do_faceswap_from_face(body_image, face_im, face_landmarks, output_image)
+
 if __name__ == "__main__":
-    do_faceswap(sys.argv[1], sys.argv[2], 'output.jpg')
+    do_faceswap(sys.argv[1], sys.argv[2], sys.argv[3])
