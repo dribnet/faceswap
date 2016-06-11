@@ -203,9 +203,7 @@ def correct_colours(im1, im2, landmarks1):
     return (im2.astype(numpy.float64) * im1_blur.astype(numpy.float64) /
                                                 im2_blur.astype(numpy.float64))
 
-def do_faceswap_from_face(body_image, face_im, face_landmarks, output_image):
-    body_im, body_landmarks = read_im_and_landmarks(body_image)
-
+def do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, output_image):
     M = transformation_from_points(body_landmarks[ALIGN_POINTS],
                                    face_landmarks[ALIGN_POINTS])
 
@@ -221,9 +219,18 @@ def do_faceswap_from_face(body_image, face_im, face_landmarks, output_image):
 
     cv2.imwrite(output_image, output_im)
 
+def do_faceswap_from_face(body_image, face_im, face_landmarks, output_image):
+    body_im, body_landmarks = read_im_and_landmarks(body_image)
+    return do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, output_image)
+
+def get_max_extent(landmarks):
+    min_x, min_y = numpy.asarray(numpy.min(landmarks, axis=0)).reshape(-1)
+    max_x, max_y = numpy.asarray(numpy.max(landmarks, axis=0)).reshape(-1)
+    return numpy.max([max_x - min_x, max_y - min_y])
 
 def do_faceswap(body_image, face_image, output_image):
     face_im, face_landmarks = read_im_and_landmarks(face_image)
+    print(get_max_extent(face_landmarks))
     do_faceswap_from_face(body_image, face_im, face_landmarks, output_image)
 
 if __name__ == "__main__":
