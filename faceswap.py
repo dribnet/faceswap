@@ -90,15 +90,33 @@ class TooManyFaces(Exception):
 class NoFaces(Exception):
     pass
 
+def get_max_extent(landmarks):
+    min_x, min_y = numpy.asarray(numpy.min(landmarks, axis=0)).reshape(-1)
+    max_x, max_y = numpy.asarray(numpy.max(landmarks, axis=0)).reshape(-1)
+    return numpy.max([max_x - min_x, max_y - min_y])
+
+# when ordering landmarks, choose largest
+def landmark_ordering(landmark_pair):
+    landmarks = landmark_pair[1]
+    min_x, min_y = numpy.asarray(numpy.min(landmarks, axis=0)).reshape(-1)
+    max_extent = get_max_extent(landmarks)
+    return [max_extent, min_x, min_y]
+
 def get_landmarks(im):
     rects = detector(im, 1)
-    
-    if len(rects) > 1:
-        raise TooManyFaces
+
     if len(rects) == 0:
         raise NoFaces
 
-    return numpy.matrix([[p.x, p.y] for p in predictor(im, rects[0]).parts()])
+    # compute matrix for each rect
+    pairs = map(lambda rect: [rect, numpy.matrix([[p.x, p.y] for p in predictor(im, rect).parts()])], rects)
+
+    if len(pairs) > 1:
+        new_pairs = sorted(pairs, key=landmark_ordering)
+        pairs = [ new_pairs[0] ]
+        # raise TooManyFaces
+
+    return pairs[0][1]
 
 def annotate_landmarks(im, landmarks):
     im = im.copy()
@@ -223,14 +241,8 @@ def do_faceswap_from_face(body_image, face_im, face_landmarks, output_image):
     body_im, body_landmarks = read_im_and_landmarks(body_image)
     return do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, output_image)
 
-def get_max_extent(landmarks):
-    min_x, min_y = numpy.asarray(numpy.min(landmarks, axis=0)).reshape(-1)
-    max_x, max_y = numpy.asarray(numpy.max(landmarks, axis=0)).reshape(-1)
-    return numpy.max([max_x - min_x, max_y - min_y])
-
 def do_faceswap(body_image, face_image, output_image):
     face_im, face_landmarks = read_im_and_landmarks(face_image)
-    print(get_max_extent(face_landmarks))
     do_faceswap_from_face(body_image, face_im, face_landmarks, output_image)
 
 if __name__ == "__main__":
