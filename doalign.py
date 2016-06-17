@@ -55,7 +55,7 @@ def align_face(infile, outfile, image_size, standard_landmarks=None, exception_p
         return False
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Plot model samples")
+    parser = argparse.ArgumentParser(description="Align faces")
     parser.add_argument("--image-size", dest='image_size', type=int, default=64,
                         help="size of output images")
     parser.add_argument("--input-directory", dest='input_directory', default="inputs",

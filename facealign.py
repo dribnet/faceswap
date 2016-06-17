@@ -56,14 +56,26 @@ def read_im_and_landmarks(fname):
     im = cv2.imread(fname, cv2.IMREAD_COLOR)
     if (im is None):
         raise faceswap.NoFaces
-    im_core = cv2.resize(im, (im.shape[1] * faceswap.SCALE_FACTOR,
-                              im.shape[0] * faceswap.SCALE_FACTOR))
+
+    max_input_image_extent = 1024
+
+    x_scale_factor = float(max_input_image_extent) / im.shape[0]
+    y_scale_factor = float(max_input_image_extent) / im.shape[1]
+    scale_factor = min(1.0, x_scale_factor, y_scale_factor)
+
+    im_core = cv2.resize(im, (int(im.shape[1] * scale_factor),
+                              int(im.shape[0] * scale_factor)))
 
     core_shape = im_core.shape
-    left   = int(core_shape[1] - 0.25 * core_shape[1])
-    right  = int(2 * core_shape[1] + 0.25 * core_shape[1])
-    top    = int(core_shape[0] - 0.25 * core_shape[0])
-    bottom = int(2 * core_shape[0] + 0.25 * core_shape[0])
+    # add a fuzzy buffer the same width all the way around
+    min_dimension = core_shape[0]
+    if core_shape[1] < min_dimension:
+        min_dimension = core_shape[1]
+    extension_amount = 0.2 * min_dimension
+    left   = int(core_shape[1] - extension_amount)
+    right  = int(2 * core_shape[1] + extension_amount)
+    top    = int(core_shape[0] - extension_amount)
+    bottom = int(2 * core_shape[0] + extension_amount)
     # print("L,R,T,B {},{},{},{}".format(left, right, top, bottom))
 
     im_blur = cv2.GaussianBlur(im_core, (blur_amount, blur_amount), 0)
@@ -77,6 +89,7 @@ def read_im_and_landmarks(fname):
     im_buffered = np.concatenate((im_row1, im_row2, im_row3), axis=0)
     im_final = im_buffered[top:bottom, left:right, :].astype(np.uint8)
     s = faceswap.get_landmarks(im_final)
+    # cv2.imwrite("debug.png", im_final)
 
     return im_final, s
 
