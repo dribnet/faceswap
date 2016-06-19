@@ -90,10 +90,19 @@ class TooManyFaces(Exception):
 class NoFaces(Exception):
     pass
 
-def get_max_extent(landmarks):
+
+def get_bounding_box(landmarks):
     min_x, min_y = numpy.asarray(numpy.min(landmarks, axis=0)).reshape(-1)
     max_x, max_y = numpy.asarray(numpy.max(landmarks, axis=0)).reshape(-1)
-    return numpy.max([max_x - min_x, max_y - min_y])
+    return min_x, max_x, min_y, max_y
+
+def get_extent(landmarks):
+    min_x, max_x, min_y, max_y = get_bounding_box(landmarks)
+    return max_x - min_x, max_y - min_y
+
+def get_max_extent(landmarks):
+    extent_x, extent_y = get_extent(landmarks)
+    return numpy.max([extent_x, extent_y])
 
 # when ordering landmarks, choose largest
 def landmark_ordering(landmark_pair):
@@ -102,18 +111,32 @@ def landmark_ordering(landmark_pair):
     max_extent = get_max_extent(landmarks)
     return [max_extent, min_x, min_y]
 
-def get_landmarks(im):
-    rects = detector(im, 1)
+def rect_not_in_border(r, image_width, image_height, border_filter_width):
+    min_x, max_x, min_y, max_y = get_bounding_box(r[1])
+    if min_x < border_filter_width or min_y < border_filter_width or \
+       max_x > image_width - border_filter_width or max_y > image_height - border_filter_width:
+        return False
+    return True
 
-    if len(rects) == 0:
-        raise NoFaces
+def get_landmarks(im, border_filter_width=0):
+    rects = detector(im, 1)
 
     # compute matrix for each rect
     pairs = map(lambda rect: [rect, numpy.matrix([[p.x, p.y] for p in predictor(im, rect).parts()])], rects)
 
+    image_height, image_width, image_depth = im.shape
+    pairs = filter(lambda rect: rect_not_in_border(rect, image_width, image_height, border_filter_width), pairs)
+
+
+    if len(rects) == 0:
+        raise NoFaces
+
     if len(pairs) > 1:
-        new_pairs = sorted(pairs, key=landmark_ordering)
+        # print(get_bounding_box(pairs[0][1]))
+        # print(get_bounding_box(pairs[1][1]))
+        new_pairs = sorted(pairs, key=landmark_ordering, reverse=True)
         pairs = [ new_pairs[0] ]
+        # print(get_bounding_box(pairs[0][1]))
         # raise TooManyFaces
 
     return pairs[0][1]

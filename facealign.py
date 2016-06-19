@@ -88,7 +88,7 @@ def read_im_and_landmarks(fname):
     im_row3 = np.concatenate((blur_flipxy, blur_flipy, blur_flipxy), axis=1)
     im_buffered = np.concatenate((im_row1, im_row2, im_row3), axis=0)
     im_final = im_buffered[top:bottom, left:right, :].astype(np.uint8)
-    s = faceswap.get_landmarks(im_final)
+    s = faceswap.get_landmarks(im_final, extension_amount)
     # cv2.imwrite("debug.png", im_final)
 
     return im_final, s
