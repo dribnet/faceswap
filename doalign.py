@@ -34,11 +34,11 @@ def get_standard_landmarks():
     return np.matrix(np.load(abs_file_path))
 
 # alignment from infile saved to outfile. returns true if all is ok.
-def align_face(infile, outfile, image_size, standard_landmarks=None, exception_print=True):
+def align_face(infile, outfile, image_size, standard_landmarks=None, exception_print=True, max_extension_amount=-1):
     if standard_landmarks is None:
         standard_landmarks = get_standard_landmarks()
     try:
-        im, landmarks = facealign.read_im_and_landmarks(infile)
+        im, landmarks = facealign.read_im_and_landmarks(infile, max_extension_amount=max_extension_amount)
         M = faceswap.transformation_from_points(standard_landmarks[faceswap.ALIGN_POINTS],
                                        landmarks[faceswap.ALIGN_POINTS])
         warped_im2 = faceswap.warp_im(im, M, (1024,1024,3))
@@ -58,6 +58,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Align faces")
     parser.add_argument("--image-size", dest='image_size', type=int, default=64,
                         help="size of output images")
+    parser.add_argument("--max-extension-amount", dest='max_extension_amount', type=int, default=-1,
+                        help="maximum pixels to extend (0 to disable, -1 to ignore)")
     parser.add_argument("--input-directory", dest='input_directory', default="inputs",
                         help="directory for input files")
     parser.add_argument("--output-directory", dest='output_directory', default="outputs",
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     landmarks = get_standard_landmarks()
 
     if args.input_file is not None:
-        if align_face(args.input_file, args.output_file, args.image_size, landmarks):
+        if align_face(args.input_file, args.output_file, args.image_size, landmarks, max_extension_amount=args.max_extension_amount):
             sys.exit(0)
         else:
             sys.exit(1)

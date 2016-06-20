@@ -51,7 +51,7 @@ import faceswap
 
 import sys
 
-def read_im_and_landmarks(fname):
+def read_im_and_landmarks(fname, max_extension_amount=-1):
     blur_amount = 31
     im = cv2.imread(fname, cv2.IMREAD_COLOR)
     if (im is None):
@@ -72,6 +72,8 @@ def read_im_and_landmarks(fname):
     if core_shape[1] < min_dimension:
         min_dimension = core_shape[1]
     extension_amount = 0.2 * min_dimension
+    if max_extension_amount >=0 and extension_amount > max_extension_amount:
+        extension_amount = max_extension_amount
     left   = int(core_shape[1] - extension_amount)
     right  = int(2 * core_shape[1] + extension_amount)
     top    = int(core_shape[0] - extension_amount)
