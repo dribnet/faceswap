@@ -254,9 +254,9 @@ def do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, out
                               axis=0)
 
     warped_im2 = warp_im(face_im, M, body_im.shape)
-    warped_corrected_im2 = correct_colours(body_im, warped_im2, body_landmarks)
+    # warped_corrected_im2 = correct_colours(body_im, warped_im2, body_landmarks)
 
-    output_im = body_im * (1.0 - combined_mask) + warped_corrected_im2 * combined_mask
+    output_im = body_im * (1.0 - combined_mask) + warped_im2 * combined_mask
 
     cv2.imwrite(output_image, output_im)
 
