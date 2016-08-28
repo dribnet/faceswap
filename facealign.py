@@ -71,7 +71,7 @@ def read_im_and_landmarks(fname, max_extension_amount=-1):
     min_dimension = core_shape[0]
     if core_shape[1] < min_dimension:
         min_dimension = core_shape[1]
-    extension_amount = 0.2 * min_dimension
+    extension_amount = 0.4 * min_dimension
     if max_extension_amount >=0 and extension_amount > max_extension_amount:
         extension_amount = max_extension_amount
     left   = int(core_shape[1] - extension_amount)

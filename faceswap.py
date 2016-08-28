@@ -121,14 +121,16 @@ def rect_not_in_border(r, image_width, image_height, border_filter_width):
 def get_landmarks(im, border_filter_width=0):
     rects = detector(im, 1)
 
+    if len(rects) == 0:
+        raise NoFaces
+
     # compute matrix for each rect
     pairs = map(lambda rect: [rect, numpy.matrix([[p.x, p.y] for p in predictor(im, rect).parts()])], rects)
 
     image_height, image_width, image_depth = im.shape
     pairs = filter(lambda rect: rect_not_in_border(rect, image_width, image_height, border_filter_width), pairs)
 
-
-    if len(rects) == 0:
+    if len(pairs) == 0:
         raise NoFaces
 
     if len(pairs) > 1:
