@@ -47,7 +47,7 @@ import cv2
 import dlib
 import numpy as np
 from scipy.misc import imresize 
-import faceswap
+import faceswap.core
 
 import sys
 
@@ -55,7 +55,7 @@ def read_im_and_landmarks(fname, max_extension_amount=-1):
     blur_amount = 31
     im = cv2.imread(fname, cv2.IMREAD_COLOR)
     if (im is None):
-        raise faceswap.NoFaces
+        raise faceswap.core.NoFaces
 
     max_input_image_extent = 1024
 
@@ -90,7 +90,7 @@ def read_im_and_landmarks(fname, max_extension_amount=-1):
     im_row3 = np.concatenate((blur_flipxy, blur_flipy, blur_flipxy), axis=1)
     im_buffered = np.concatenate((im_row1, im_row2, im_row3), axis=0)
     im_final = im_buffered[top:bottom, left:right, :].astype(np.uint8)
-    s = faceswap.get_landmarks(im_final, extension_amount)
+    s = faceswap.core.get_landmarks(im_final, extension_amount)
     # cv2.imwrite("debug.png", im_final)
 
     return im_final, s
@@ -98,7 +98,7 @@ def read_im_and_landmarks(fname, max_extension_amount=-1):
 
 if __name__ == "__main__":
     avg_landmarks = np.load("mean_landmark_x4.npy")
-    im, landmarks = faceswap.read_im_and_landmarks("celeba/000001.jpg")
+    im, landmarks = faceswap.core.read_im_and_landmarks("celeba/000001.jpg")
     coerced_landmarks = 0 * landmarks + 4 * avg_landmarks
 
     source_dir = "/Volumes/expand1/develop/data/CelebA/original/img_celeba"
@@ -113,15 +113,15 @@ if __name__ == "__main__":
             if i % 10000 == 0:
                 print("face {}".format(filebase))
             im, landmarks = read_im_and_landmarks("{}/{}.jpg".format(source_dir, filebase))
-            M = faceswap.transformation_from_points(coerced_landmarks[faceswap.ALIGN_POINTS],
-                                           landmarks[faceswap.ALIGN_POINTS])
-            warped_im2 = faceswap.warp_im(im, M, (1024,1024,3))
+            M = faceswap.core.transformation_from_points(coerced_landmarks[faceswap.core.ALIGN_POINTS],
+                                           landmarks[faceswap.core.ALIGN_POINTS])
+            warped_im2 = faceswap.core.warp_im(im, M, (1024,1024,3))
             resize64 = imresize(warped_im2, (256,256), interp="bicubic", mode="RGB")
             cv2.imwrite("{}/{}.png".format(dest_dir, filebase), resize64)
             # cv2.imwrite("{}/{}.png".format(dest_dir, filebase), im)
-        except faceswap.NoFaces:
+        except faceswap.core.NoFaces:
             pass
-        except faceswap.TooManyFaces:
+        except faceswap.core.TooManyFaces:
             print("too many faces in {}".format(filebase))
         # except:
         #     print "Unexpected error:", sys.exc_info()[0]

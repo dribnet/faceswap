@@ -15,8 +15,8 @@ from scipy.misc import imresize
 import glob
 import os
 import sys
-import faceswap
-import facealign
+import faceswap.core
+from faceswap import facealign
 import argparse
 
 # get a matrix which represents the standard face location (1024x1024 I believe)
@@ -24,7 +24,7 @@ def get_standard_landmarks():
     # historical note: this is how we made this file
     # avg_landmarks = np.load("mean_landmark_x4.npy")
     # im, landmarks = facealign.read_im_and_landmarks("celeba/000001.jpg")
-    # im, landmarks = faceswap.read_im_and_landmarks("celeba/000001.jpg")
+    # im, landmarks = faceswap.core.read_im_and_landmarks("celeba/000001.jpg")
     # standard_landmarks = 0 * landmarks + 4 * avg_landmarks
     # np.save("standard_landmarks", standard_landmarks)
 
@@ -39,17 +39,17 @@ def align_face(infile, outfile, image_size, standard_landmarks=None, exception_p
         standard_landmarks = get_standard_landmarks()
     try:
         im, landmarks = facealign.read_im_and_landmarks(infile, max_extension_amount=max_extension_amount)
-        M = faceswap.transformation_from_points(standard_landmarks[faceswap.ALIGN_POINTS],
-                                       landmarks[faceswap.ALIGN_POINTS])
-        warped_im2 = faceswap.warp_im(im, M, (1024,1024,3))
+        M = faceswap.core.transformation_from_points(standard_landmarks[faceswap.core.ALIGN_POINTS],
+                                       landmarks[faceswap.core.ALIGN_POINTS])
+        warped_im2 = faceswap.core.warp_im(im, M, (1024,1024,3))
         resize64 = imresize(warped_im2, (image_size, image_size), interp="bicubic", mode="RGB")
         cv2.imwrite(outfile, resize64)
         return True
-    except faceswap.NoFaces:
+    except faceswap.core.NoFaces:
         if exception_print:
             print("no faces in {}".format(infile))
         return False
-    except faceswap.TooManyFaces:
+    except faceswap.core.TooManyFaces:
         if exception_print:
             print("too many faces in {}".format(infile))
         return False

@@ -13,6 +13,7 @@ setup(name='faceswap',
       url='https://github.com/dribnet/faceswap',
       download_url='https://github.com/dribnet/faceswap/tarball/0.1.0',
       license='MIT',
+      package_data={'': ['faceswap/standard_landmarks.npy', 'faceswap/shape_predictor_68_face_landmarks.dat']},
       entry_points={
           # 'console_scripts': ['neupup = neupup.neupup:main']
       },
