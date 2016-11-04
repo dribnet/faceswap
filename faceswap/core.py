@@ -158,13 +158,29 @@ def draw_convex_hull(im, points, color):
     points = cv2.convexHull(points)
     cv2.fillConvexPoly(im, points, color=color)
 
-def get_face_mask(im, landmarks):
+def get_face_mask(im, landmarks, tight=False):
     im = numpy.zeros(im.shape[:2], dtype=numpy.float64)
 
-    for group in OVERLAY_POINTS:
+    if tight:
+        # convex hull over each group of landmarks
+        for group in OVERLAY_POINTS:
+            draw_convex_hull(im,
+                             landmarks[group],
+                             color=1)
+
+    else:
+        # convex hull over entitre set of points across all groups
+        points = None
+        for group in OVERLAY_POINTS:
+            if points is None:
+                points = numpy.copy(landmarks[group])
+            else:
+                points = numpy.append(points, landmarks[group], 0)
+
         draw_convex_hull(im,
-                         landmarks[group],
+                         points,
                          color=1)
+
 
     im = numpy.array([im, im, im]).transpose((1, 2, 0))
 
@@ -246,13 +262,15 @@ def correct_colours(im1, im2, landmarks1):
     return (im2.astype(numpy.float64) * im1_blur.astype(numpy.float64) /
                                                 im2_blur.astype(numpy.float64))
 
-def do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, output_image):
+def do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, output_image, tight_mask=False):
     M = transformation_from_points(body_landmarks[ALIGN_POINTS],
                                    face_landmarks[ALIGN_POINTS])
 
-    mask = get_face_mask(face_im, face_landmarks)
+    mask = get_face_mask(face_im, face_landmarks, tight_mask)
+    cv2.imwrite("mask.png", (mask*255.0))
+
     warped_mask = warp_im(mask, M, body_im.shape)
-    combined_mask = numpy.max([get_face_mask(body_im, body_landmarks), warped_mask],
+    combined_mask = numpy.max([get_face_mask(body_im, body_landmarks, tight_mask), warped_mask],
                               axis=0)
 
     warped_im2 = warp_im(face_im, M, body_im.shape)
@@ -262,13 +280,13 @@ def do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, out
 
     cv2.imwrite(output_image, output_im)
 
-def do_faceswap_from_face(body_image, face_im, face_landmarks, output_image):
+def do_faceswap_from_face(body_image, face_im, face_landmarks, output_image, tight_mask=False):
     body_im, body_landmarks = read_im_and_landmarks(body_image)
-    return do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, output_image)
+    return do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, output_image, tight_mask)
 
-def do_faceswap(body_image, face_image, output_image):
+def do_faceswap(body_image, face_image, output_image, tight_mask=False):
     face_im, face_landmarks = read_im_and_landmarks(face_image)
     do_faceswap_from_face(body_image, face_im, face_landmarks, output_image)
 
 if __name__ == "__main__":
-    do_faceswap(sys.argv[1], sys.argv[2], sys.argv[3])
+    do_faceswap(sys.argv[1], sys.argv[2], sys.argv[3], False)

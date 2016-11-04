@@ -47,13 +47,13 @@ def multi_read_im_and_landmarks(fname):
 
     return im, s
 
-def perform_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks):
+def perform_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, tight_mask=False):
     M = faceswap.core.transformation_from_points(body_landmarks[faceswap.core.ALIGN_POINTS],
                                    face_landmarks[faceswap.core.ALIGN_POINTS])
 
-    mask = faceswap.core.get_face_mask(face_im, face_landmarks)
+    mask = faceswap.core.get_face_mask(face_im, face_landmarks, tight_mask)
     warped_mask = faceswap.core.warp_im(mask, M, body_im.shape)
-    combined_mask = numpy.max([faceswap.core.get_face_mask(body_im, body_landmarks), warped_mask],
+    combined_mask = numpy.max([faceswap.core.get_face_mask(body_im, body_landmarks, tight_mask), warped_mask],
                               axis=0)
 
     warped_im2 = faceswap.core.warp_im(face_im, M, body_im.shape)
@@ -63,7 +63,7 @@ def perform_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks
 
     return output_im
 
-def multi_do_faceswap_from_face(body_image, face_im, face_landmarks_list, output_image):
+def multi_do_faceswap_from_face(body_image, face_im, face_landmarks_list, output_image, tight_mask=False):
     body_im, body_landmarks_list = multi_read_im_and_landmarks(body_image)
     output_im = body_im
     if len(body_landmarks_list) != len(face_landmarks_list):
@@ -72,12 +72,12 @@ def multi_do_faceswap_from_face(body_image, face_im, face_landmarks_list, output
     # print("Replacing {} faces".format(len(body_landmarks_list)))
     # print("Found {} faces".format(len(face_landmarks_list)))
     for i in range(len(body_landmarks_list)):
-		output_im = perform_faceswap_from_saved(output_im, body_landmarks_list[i], face_im, face_landmarks_list[i])
+		output_im = perform_faceswap_from_saved(output_im, body_landmarks_list[i], face_im, face_landmarks_list[i], tight_mask)
     cv2.imwrite(output_image, output_im)
 
-def do_faceswap(body_image, face_image, output_image):
+def do_faceswap(body_image, face_image, output_image, tight_mask=False):
     face_im, face_landmarks_list = multi_read_im_and_landmarks(face_image)
-    multi_do_faceswap_from_face(body_image, face_im, face_landmarks_list, output_image)
+    multi_do_faceswap_from_face(body_image, face_im, face_landmarks_list, output_image, tight_mask)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Align faces")
@@ -95,12 +95,14 @@ if __name__ == "__main__":
                         help="single file input (overrides input-directory)")
     parser.add_argument("--output-file", dest='output_file', default="output.png",
                         help="single file output")
+    parser.add_argument("--tight-mask", dest='tight_mask', action='store_true', default=False,
+                        help="Use a tight mask around facial features")
     args = parser.parse_args()
 
     global_grid_size = args.image_size
 
     if args.input_file is not None:
-        do_faceswap(args.base_file, args.input_file, args.output_file)
+        do_faceswap(args.base_file, args.input_file, args.output_file, args.tight_mask)
     	sys.exit(0)
 
     # instead, use input-directory and output-directory
@@ -114,5 +116,5 @@ if __name__ == "__main__":
         # always save as png
         outfile = "{}.png".format(os.path.splitext(outfile)[0])
         print("Saving: {}".format(outfile))
-        do_faceswap(args.base_file, infile, outfile)
+        do_faceswap(args.base_file, infile, outfile, args.tight_mask)
 
