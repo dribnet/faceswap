@@ -67,12 +67,12 @@ def multi_do_faceswap_from_face(body_image, face_im, face_landmarks_list, output
     body_im, body_landmarks_list = multi_read_im_and_landmarks(body_image)
     output_im = body_im
     if len(body_landmarks_list) != len(face_landmarks_list):
-    	print("Warning: putting {} faces on image with {} faces".format(
-    		len(face_landmarks_list), len(body_landmarks_list)))
+        print("Warning: putting {} faces on image with {} faces".format(
+            len(face_landmarks_list), len(body_landmarks_list)))
     # print("Replacing {} faces".format(len(body_landmarks_list)))
     # print("Found {} faces".format(len(face_landmarks_list)))
     for i in range(len(body_landmarks_list)):
-		output_im = perform_faceswap_from_saved(output_im, body_landmarks_list[i], face_im, face_landmarks_list[i], tight_mask)
+        output_im = perform_faceswap_from_saved(output_im, body_landmarks_list[i], face_im, face_landmarks_list[i], tight_mask)
     cv2.imwrite(output_image, output_im)
 
 def do_faceswap(body_image, face_image, output_image, tight_mask=False):
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
     if args.input_file is not None:
         do_faceswap(args.base_file, args.input_file, args.output_file, args.tight_mask)
-    	sys.exit(0)
+        sys.exit(0)
 
     # instead, use input-directory and output-directory
     files = sorted(glob.glob(args.input_glob))
