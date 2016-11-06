@@ -51,13 +51,13 @@ import faceswap.core
 
 import sys
 
-def read_im_and_landmarks(fname, max_extension_amount=-1):
+def read_im_and_landmarks(fname, max_extension_amount=-1, max_input_image_extent=2048):
     blur_amount = 31
     im = cv2.imread(fname, cv2.IMREAD_COLOR)
     if (im is None):
         raise faceswap.core.NoFaces
 
-    max_input_image_extent = 1024
+    # max_input_image_extent = 2048
 
     x_scale_factor = float(max_input_image_extent) / im.shape[0]
     y_scale_factor = float(max_input_image_extent) / im.shape[1]
@@ -90,10 +90,10 @@ def read_im_and_landmarks(fname, max_extension_amount=-1):
     im_row3 = np.concatenate((blur_flipxy, blur_flipy, blur_flipxy), axis=1)
     im_buffered = np.concatenate((im_row1, im_row2, im_row3), axis=0)
     im_final = im_buffered[top:bottom, left:right, :].astype(np.uint8)
-    s = faceswap.core.get_landmarks(im_final, extension_amount)
+    rects, landmarks = faceswap.core.get_landmarks(im_final, extension_amount)
     # cv2.imwrite("debug.png", im_final)
 
-    return im_final, s
+    return im_final, rects, landmarks
 
 
 if __name__ == "__main__":
@@ -112,7 +112,7 @@ if __name__ == "__main__":
             filebase = "{:06d}".format(i+1)
             if i % 10000 == 0:
                 print("face {}".format(filebase))
-            im, landmarks = read_im_and_landmarks("{}/{}.jpg".format(source_dir, filebase))
+            im, rects, landmarks = read_im_and_landmarks("{}/{}.jpg".format(source_dir, filebase))
             M = faceswap.core.transformation_from_points(coerced_landmarks[faceswap.core.ALIGN_POINTS],
                                            landmarks[faceswap.core.ALIGN_POINTS])
             warped_im2 = faceswap.core.warp_im(im, M, (1024,1024,3))

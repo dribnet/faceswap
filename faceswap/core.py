@@ -141,7 +141,7 @@ def get_landmarks(im, border_filter_width=0):
         # print(get_bounding_box(pairs[0][1]))
         # raise TooManyFaces
 
-    return pairs[0][1]
+    return pairs[0]
 
 def annotate_landmarks(im, landmarks):
     im = im.copy()
@@ -234,7 +234,7 @@ def read_im_and_landmarks(fname):
                          im.shape[0] * SCALE_FACTOR))
     s = get_landmarks(im)
 
-    return im, s
+    return im, s[0], s[1]
 
 def warp_im(im, M, dshape):
     output_im = numpy.zeros(dshape, dtype=im.dtype)
@@ -281,11 +281,11 @@ def do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, out
     cv2.imwrite(output_image, output_im)
 
 def do_faceswap_from_face(body_image, face_im, face_landmarks, output_image, tight_mask=False):
-    body_im, body_landmarks = read_im_and_landmarks(body_image)
+    body_im, body_rects, body_landmarks = read_im_and_landmarks(body_image)
     return do_faceswap_from_saved(body_im, body_landmarks, face_im, face_landmarks, output_image, tight_mask)
 
 def do_faceswap(body_image, face_image, output_image, tight_mask=False):
-    face_im, face_landmarks = read_im_and_landmarks(face_image)
+    face_im, face_rects, face_landmarks = read_im_and_landmarks(face_image)
     do_faceswap_from_face(body_image, face_im, face_landmarks, output_image)
 
 if __name__ == "__main__":

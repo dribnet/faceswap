@@ -34,11 +34,20 @@ def get_standard_landmarks():
     return np.matrix(np.load(abs_file_path))
 
 # alignment from infile saved to outfile. returns true if all is ok.
-def align_face(infile, outfile, image_size, standard_landmarks=None, exception_print=True, max_extension_amount=-1):
+def align_face(infile, outfile, image_size, standard_landmarks=None, min_span=None, exception_print=True, max_extension_amount=-1):
     if standard_landmarks is None:
         standard_landmarks = get_standard_landmarks()
     try:
-        im, landmarks = facealign.read_im_and_landmarks(infile, max_extension_amount=max_extension_amount)
+        if min_span is not None:
+            max_input_image_extent = 8 * min_span
+        else:
+            max_input_image_extent = 2048
+        im, rect, landmarks = facealign.read_im_and_landmarks(infile, max_extension_amount=max_extension_amount, max_input_image_extent=max_input_image_extent)
+        if min_span is not None:
+            width = rect.right()-rect.left()
+            height = rect.bottom()-rect.top()
+            if width < min_span or height < min_span:
+                return False
         M = faceswap.core.transformation_from_points(standard_landmarks[faceswap.core.ALIGN_POINTS],
                                        landmarks[faceswap.core.ALIGN_POINTS])
         warped_im2 = faceswap.core.warp_im(im, M, (1024,1024,3))
@@ -58,6 +67,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Align faces")
     parser.add_argument("--image-size", dest='image_size', type=int, default=64,
                         help="size of output images")
+    parser.add_argument("--min-span", dest='min_span', type=int, default=None,
+                        help="drop images if w/h of detected face is lower than span")
     parser.add_argument("--max-extension-amount", dest='max_extension_amount', type=int, default=-1,
                         help="maximum pixels to extend (0 to disable, -1 to ignore)")
     parser.add_argument("--input-directory", dest='input_directory', default="inputs",
@@ -73,13 +84,13 @@ if __name__ == "__main__":
     landmarks = get_standard_landmarks()
 
     if args.input_file is not None:
-        if align_face(args.input_file, args.output_file, args.image_size, landmarks, max_extension_amount=args.max_extension_amount):
+        if align_face(args.input_file, args.output_file, args.image_size, landmarks, args.min_span, max_extension_amount=args.max_extension_amount):
             sys.exit(0)
         else:
             sys.exit(1)
 
     # read input files
-    files = glob.glob("{}/*.*".format(args.input_directory))
+    files = sorted(glob.glob("{}/*.*".format(args.input_directory)))
     if not os.path.exists(args.output_directory):
         os.makedirs(args.output_directory)
 
@@ -87,6 +98,6 @@ if __name__ == "__main__":
         outfile = os.path.join(args.output_directory, os.path.basename(infile))
         # always save as png
         outfile = "{}.png".format(os.path.splitext(outfile)[0])
-        align_face(infile, outfile, args.image_size, landmarks)
+        align_face(infile, outfile, args.image_size, landmarks, args.min_span, max_extension_amount=args.max_extension_amount)
         # except:
         #     print "Unexpected error:", sys.exc_info()[0]
