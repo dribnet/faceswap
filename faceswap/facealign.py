@@ -51,6 +51,10 @@ import faceswap.core
 
 import sys
 
+# default extension is 40% of shortest edge. can be clipped further
+#   in pixels by setting max_extension_amount
+# if longest edge is longer than max_input_image_extent, it will be
+#   scaled down to max_input_image_extent
 def read_im_and_landmarks(fname, max_extension_amount=-1, max_input_image_extent=2048):
     blur_amount = 31
     im = cv2.imread(fname, cv2.IMREAD_COLOR)
@@ -63,8 +67,11 @@ def read_im_and_landmarks(fname, max_extension_amount=-1, max_input_image_extent
     y_scale_factor = float(max_input_image_extent) / im.shape[1]
     scale_factor = min(1.0, x_scale_factor, y_scale_factor)
 
-    im_core = cv2.resize(im, (int(im.shape[1] * scale_factor),
-                              int(im.shape[0] * scale_factor)))
+    if scale_factor < 1.0:
+        im_core = cv2.resize(im, (int(im.shape[1] * scale_factor),
+                                  int(im.shape[0] * scale_factor)))
+    else:
+        im_core = im
 
     core_shape = im_core.shape
     # add a fuzzy buffer the same width all the way around

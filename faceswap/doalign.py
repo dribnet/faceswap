@@ -33,7 +33,8 @@ def get_standard_landmarks():
     abs_file_path = os.path.join(script_dir, rel_path)
     return np.matrix(np.load(abs_file_path))
 
-# alignment from infile saved to outfile. returns true if all is ok.
+# alignment from infile saved to outfile. returns true, rect if all is ok.
+# if detected face is not width min_span, returns False
 def align_face(infile, outfile, image_size, standard_landmarks=None, min_span=None, exception_print=True, max_extension_amount=-1):
     if standard_landmarks is None:
         standard_landmarks = get_standard_landmarks()
@@ -47,21 +48,21 @@ def align_face(infile, outfile, image_size, standard_landmarks=None, min_span=No
             width = rect.right()-rect.left()
             height = rect.bottom()-rect.top()
             if width < min_span or height < min_span:
-                return False
+                return False, rect
         M = faceswap.core.transformation_from_points(standard_landmarks[faceswap.core.ALIGN_POINTS],
                                        landmarks[faceswap.core.ALIGN_POINTS])
         warped_im2 = faceswap.core.warp_im(im, M, (1024,1024,3))
         resize64 = imresize(warped_im2, (image_size, image_size), interp="bicubic", mode="RGB")
         cv2.imwrite(outfile, resize64)
-        return True
+        return True, rect
     except faceswap.core.NoFaces:
         if exception_print:
             print("no faces in {}".format(infile))
-        return False
+        return False, None
     except faceswap.core.TooManyFaces:
         if exception_print:
             print("too many faces in {}".format(infile))
-        return False
+        return False, None
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Align faces")
@@ -84,7 +85,8 @@ if __name__ == "__main__":
     landmarks = get_standard_landmarks()
 
     if args.input_file is not None:
-        if align_face(args.input_file, args.output_file, args.image_size, landmarks, args.min_span, max_extension_amount=args.max_extension_amount):
+        did_align, rect = align_face(args.input_file, args.output_file, args.image_size, landmarks, args.min_span, max_extension_amount=args.max_extension_amount)
+        if did_align:
             sys.exit(0)
         else:
             sys.exit(1)
