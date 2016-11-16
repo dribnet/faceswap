@@ -12,6 +12,10 @@ import dlib
 import numpy as np
 from scipy.misc import imresize 
 
+import time
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
 import glob
 import os
 import sys
@@ -64,6 +68,26 @@ def align_face(infile, outfile, image_size, standard_landmarks=None, min_span=No
             print("too many faces in {}".format(infile))
         return False, None
 
+class NewFileHandler(FileSystemEventHandler):
+    def setup(self, outdir, image_size, landmarks, min_span, max_extension_amount):
+        self.outdir = outdir
+        self.image_size = image_size
+        self.landmarks = landmarks
+        self.min_span = min_span
+        self.max_extension_amount = max_extension_amount
+
+    def process(self, infile):
+        print("Processing file: {}".format(infile))
+        outfile = os.path.join(args.output_directory, os.path.basename(infile))
+        # always save as png
+        outfile = "{}.png".format(os.path.splitext(outfile)[0])
+        print("Processing {} to {}".format(infile, outfile))
+        align_face(infile, outfile, self.image_size, self.landmarks, self.min_span, max_extension_amount=self.max_extension_amount)
+
+    def on_modified(self, event):
+        if not event.is_directory:
+            self.process(event.src_path)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Align faces")
     parser.add_argument("--image-size", dest='image_size', type=int, default=64,
@@ -76,6 +100,8 @@ if __name__ == "__main__":
                         help="directory for input files")
     parser.add_argument("--output-directory", dest='output_directory', default="outputs",
                         help="directory for output files")
+    parser.add_argument('--watch', dest='watch', default=False, action='store_true',
+                        help="monitor input-directory indefinitely")
     parser.add_argument("--input-file", dest='input_file', default=None,
                         help="single file input (overrides input-directory)")
     parser.add_argument("--output-file", dest='output_file', default="output.png",
@@ -96,10 +122,20 @@ if __name__ == "__main__":
     if not os.path.exists(args.output_directory):
         os.makedirs(args.output_directory)
 
-    for infile in files:
-        outfile = os.path.join(args.output_directory, os.path.basename(infile))
-        # always save as png
-        outfile = "{}.png".format(os.path.splitext(outfile)[0])
-        align_face(infile, outfile, args.image_size, landmarks, args.min_span, max_extension_amount=args.max_extension_amount)
-        # except:
-        #     print "Unexpected error:", sys.exc_info()[0]
+    event_handler = NewFileHandler()
+    event_handler.setup(args.output_directory, args.image_size, landmarks, args.min_span, args.max_extension_amount)
+
+    for f in files:
+        event_handler.process(f)
+
+    if args.watch:
+        observer = Observer()
+        observer.schedule(event_handler, path=args.input_directory, recursive=False)
+        observer.start()
+
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            observer.stop()
+        observer.join()
