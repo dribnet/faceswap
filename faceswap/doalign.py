@@ -129,6 +129,7 @@ if __name__ == "__main__":
         event_handler.process(f)
 
     if args.watch:
+        print("Watching input directory {}".format(args.input_directory))
         observer = Observer()
         observer.schedule(event_handler, path=args.input_directory, recursive=False)
         observer.start()

@@ -8,6 +8,7 @@ import sys
 import os
 import glob
 import argparse
+import tempfile
 
 global_grid_size = 128
 
@@ -79,6 +80,14 @@ def do_faceswap(body_image, face_image, output_image, tight_mask=False):
     face_im, face_landmarks_list = multi_read_im_and_landmarks(face_image)
     multi_do_faceswap_from_face(body_image, face_im, face_landmarks_list, output_image, tight_mask)
 
+def strip_to_base(infile):
+    tdir = tempfile.gettempdir()
+    base_file1 = os.path.join(tdir, "base1.png")
+    base_file = os.path.join(tdir, "base.png")
+    os.system("convert {0} -crop {1}x{1}+0+0 {2}".format(args.input_file, args.image_size, base_file1))
+    os.system("convert {0} {0} {0} {0} {0} {0} {0} {0} +append {1}".format(base_file1, base_file))
+    return base_file
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Align faces")
     parser.add_argument("--image-size", dest='image_size', type=int, default=128,
@@ -95,6 +104,8 @@ if __name__ == "__main__":
                         help="single file input (overrides input-directory)")
     parser.add_argument("--output-file", dest='output_file', default="output.png",
                         help="single file output")
+    parser.add_argument("--strip", dest='strip', action='store_true', default=False,
+                        help="Base-file is top left of image-file")
     parser.add_argument("--tight-mask", dest='tight_mask', action='store_true', default=False,
                         help="Use a tight mask around facial features")
     args = parser.parse_args()
@@ -102,7 +113,11 @@ if __name__ == "__main__":
     global_grid_size = args.image_size
 
     if args.input_file is not None:
-        do_faceswap(args.base_file, args.input_file, args.output_file, args.tight_mask)
+        if args.strip:
+            base_file = strip_to_base(args.input_file)
+        else:
+            base_file = args.base_file
+        do_faceswap(base_file, args.input_file, args.output_file, args.tight_mask)
         sys.exit(0)
 
     # instead, use input-directory and output-directory
