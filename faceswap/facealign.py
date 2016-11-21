@@ -55,11 +55,15 @@ import sys
 #   in pixels by setting max_extension_amount
 # if longest edge is longer than max_input_image_extent, it will be
 #   scaled down to max_input_image_extent
-def read_im_and_landmarks(fname, max_extension_amount=-1, max_input_image_extent=2048):
+def read_im_and_landmarks(fname, max_extension_amount=-1, max_input_image_extent=2048, im_buf=None):
     blur_amount = 31
-    im = cv2.imread(fname, cv2.IMREAD_COLOR)
-    if (im is None):
-        raise faceswap.core.NoFaces
+
+    if im_buf is None:
+        im = cv2.imread(fname, cv2.IMREAD_COLOR)
+        if (im is None):
+            raise faceswap.core.NoFaces
+    else:
+        im = im_buf
 
     # max_input_image_extent = 2048
 

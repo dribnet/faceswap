@@ -68,6 +68,35 @@ def align_face(infile, outfile, image_size, standard_landmarks=None, min_span=No
             print("too many faces in {}".format(infile))
         return False, None
 
+# TODO: fast hack of above. refactorme
+def align_face_buffer(im_buf, image_size, standard_landmarks=None, min_span=None, exception_print=True, max_extension_amount=-1):
+    if standard_landmarks is None:
+        standard_landmarks = get_standard_landmarks()
+    try:
+        if min_span is not None:
+            max_input_image_extent = 8 * min_span
+        else:
+            max_input_image_extent = 2048
+        im, rect, landmarks = facealign.read_im_and_landmarks("", max_extension_amount=max_extension_amount, max_input_image_extent=max_input_image_extent, im_buf=im_buf)
+        if min_span is not None:
+            width = rect.right()-rect.left()
+            height = rect.bottom()-rect.top()
+            if width < min_span or height < min_span:
+                return False, None, rect
+        M = faceswap.core.transformation_from_points(standard_landmarks[faceswap.core.ALIGN_POINTS],
+                                       landmarks[faceswap.core.ALIGN_POINTS])
+        warped_im2 = faceswap.core.warp_im(im, M, (1024,1024,3))
+        resize64 = imresize(warped_im2, (image_size, image_size), interp="bicubic", mode="RGB")
+        return True, resize64, rect
+    except faceswap.core.NoFaces:
+        if exception_print:
+            print("no faces")
+        return False, None, None
+    except faceswap.core.TooManyFaces:
+        if exception_print:
+            print("too many faces")
+        return False, None, None
+
 class NewFileHandler(FileSystemEventHandler):
     def setup(self, outdir, image_size, landmarks, min_span, max_extension_amount):
         self.outdir = outdir
