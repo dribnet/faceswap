@@ -57,6 +57,7 @@ def align_face(infile, outfile, image_size, standard_landmarks=None, min_span=No
                                        landmarks[faceswap.core.ALIGN_POINTS])
         warped_im2 = faceswap.core.warp_im(im, M, (1024,1024,3))
         resize64 = imresize(warped_im2, (image_size, image_size), interp="bicubic", mode="RGB")
+        print("Saving: {}".format(outfile))
         cv2.imwrite(outfile, resize64)
         return True, rect
     except faceswap.core.NoFaces:
@@ -81,7 +82,7 @@ class NewFileHandler(FileSystemEventHandler):
         outfile = os.path.join(args.output_directory, os.path.basename(infile))
         # always save as png
         outfile = "{}.png".format(os.path.splitext(outfile)[0])
-        print("Processing {} to {}".format(infile, outfile))
+        # print("Processing {} to {}".format(infile, outfile))
         align_face(infile, outfile, self.image_size, self.landmarks, self.min_span, max_extension_amount=self.max_extension_amount)
 
     def on_modified(self, event):
@@ -119,6 +120,7 @@ if __name__ == "__main__":
 
     # read input files
     files = sorted(glob.glob("{}/*.*".format(args.input_directory)))
+    print("{} files to process in {}".format(len(files), args.input_directory))
     if not os.path.exists(args.output_directory):
         os.makedirs(args.output_directory)
 
